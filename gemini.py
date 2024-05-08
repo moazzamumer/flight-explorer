@@ -1,12 +1,5 @@
-import textwrap
 import google.generativeai as genai
-import textwrap
-from markdown2 import Markdown
-import json
-
-def to_markdown(text):
-  text = text.replace('•', '  *')
-  return Markdown(textwrap.indent(text, '> ', predicate=lambda _: True))
+import json, time
 
 GOOGLE_API_KEY= "AIzaSyCsFvTtCmtaq71o6F_N60MMGeANx3Twpzk"
 
@@ -14,9 +7,12 @@ genai.configure(api_key=GOOGLE_API_KEY)
 
 model = genai.GenerativeModel('gemini-pro')
 
+# function to parse input text into JSON format
 def get_parsed_input(text):
-  systemPrompt = "Given user text input, your task is to create an AI model that extracts relevant travel information such as the date, origin, destination, and number of passengers, and formats it into JSON. \
-      The AI should be able to understand natural language inputs and accurately identify the required details.\
+  systemPrompt = "Given user text input, your task is to extract relevant travel information such as the trip_type (one-way or round), travel_date, return_date, origin, destination, travel_class (Economy, Business or First) and number_of_passengers, and formats it into JSON. \
+      Convert origin and desatination into city abbrevations if they are not. \
+      If any information is not given, initialize it as None in JSON. \
+      You should understand natural language inputs and accurately identify the required details.\
       Dates should be parsed and formatted in the YYYY-MM-DD format."
   prompt = f"{systemPrompt}. User input is : {text}"
   max_retries = 3
@@ -24,32 +20,28 @@ def get_parsed_input(text):
     # Include instructions within the query
     try:
       response = model.generate_content(prompt)
+      time.sleep(2)
       json_string = response.text
       json_string = json_string.split("JSON")[1].replace("```","")
       json_data = json.loads(json_string)
+      # If the JSON is empty, retry
+      if not json_data:
+        max_retries -= 1
+      # If the JSON is not empty, break
+      else:
+        break
     except:
       pass
 
-    return json_data
+  return json_data
 
-
+# function to parse scraped data from web into readable format
 def parse_flight_info(flights_data):
   systemPrompt = "Given a list of flight details, your task is to converts the list into a human-readable format.\
       Each element in the list represents details of a flight, including airline, departure time, departure airport, arrival time, arrival airport, duration, price, and additional information. \
-      You should parse each element and format the flight information into a clear and understandable format."
+      Details may also be of round trip flights. \
+    You should parse each element and format the flight information into a clear and understandable format."
   prompt = f"{systemPrompt}. This is list of flight details : {flights_data}"
   response = model.generate_content(prompt)
-  formatted_response = to_markdown(response.text)
+  formatted_response = response.text
   return formatted_response
-
-# l = [
-#   "Best\nCheapest\nPakistan International Airlines\n11:00 am\nLHE\nKHI\n5:55 pm\nISB\n6h 55m\n$191\nPakistan International Airlines\nView Deal",
-#   "Pakistan International Airlines\n7:00 am\nLHE\nUET, KHI\n5:55 pm\nISB\n10h 55m\n$241\nPakistan International Airlines\nView Deal",
-#   "Pakistan International Airlines\n10:00 pm\nLHE\nKHI, KDU\n10:15 am +1\nISB\n12h 15m\nOnly 1 seat left at this price\n$377\nPakistan International Airlines\nView Deal",
-#   "Pakistan International Airlines\n5:00 pm\nLHE\nKHI, KDU\n10:15 am +1\nISB\n17h 15m\nOnly 1 seat left at this price\n$377\nPakistan International Airlines\nView Deal",
-#   "Pakistan International Airlines\n10:00 pm\nLHE\nKHI\n5:55 pm +1\nISB\n19h 55m\nOnly 1 seat left at this price\n$225\nPakistan International Airlines\nView Deal",
-#   "SAUDIA\n10:45 am\nLHE\nJED\n1:20 am +1\nISB\n14h 35m\n$745\nSAUDIA\nView Deal"
-# ]
-
-# x = parse_flight_info(l)
-# print(to_markdown(x.text))

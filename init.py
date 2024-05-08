@@ -6,15 +6,21 @@ app = FastAPI()
 
 @app.post("/parse")
 async def parse_user_text_endpoint(user_input: base_models.UserTextInput):
-    try:
-        parsed_info = gemini.get_parsed_input(user_input.text)
-        print(parsed_info)
-        flights = scrap.get_flight_info(json_data=parsed_info)
-        print(flights)
+
+    # Parse given text input into JSON using AI model
+    parsed_info = gemini.get_parsed_input(user_input.text)
+    print(parsed_info)
+
+    # Scrap flights information from internet
+    flights = scrap.get_flight_info(json_data=parsed_info)
+    print(flights)
+    if flights:
         response = gemini.parse_flight_info(flights)
+        print(response)
         return response
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    else:
+        raise HTTPException(status_code=404, detail="No flights found")
+    
 
 
 if __name__ == "__main__":
