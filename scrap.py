@@ -4,69 +4,73 @@ from selenium.webdriver.chrome.options import Options
 import time
 
 
-def get_flight_info(json_data: dict):
+class FlightScraper:
+    def __init__(self):
+        pass
 
-    # Extract data from parsed JSON
-    trip_type = json_data['trip_type']
-    origin = json_data['origin']
-    destination = json_data['destination']
-    departure_date = json_data['travel_date']
-    if json_data['return_date'] is not None and json_data['return_date'] != 'None':
-        return_date = json_data['return_date']
-    else:
-        return_date = None
-    
-    if json_data['travel_class'] is not None and json_data['travel_class'] != 'None':
-        travel_class = json_data[ 'travel_class']
-    else:
-        travel_class = 'Economy'
-    if json_data['number_of_passengers'] is not None and json_data['number_of_passengers'] != 'None':
-        number_of_passengers = json_data['number_of_passengers']
-    else:
-        number_of_passengers = '1'
-    number_of_passengers += 'adults'
-    
-    # Construct the URL with the extracted data
-    if trip_type == 'one-way':
-        url = f"https://booking.kayak.com/flights/{origin}-{destination}/{departure_date}/{travel_class}/{number_of_passengers}?sort=bestflight_a"
-    elif trip_type == 'round' and return_date:
-        url = f"https://booking.kayak.com/flights/{origin}-{destination}/{departure_date}/{return_date}/{travel_class}/{number_of_passengers}?sort=bestflight_a"
-    elif trip_type == 'round' and not return_date:
-        url = f"https://booking.kayak.com/flights/{origin}-{destination}/{departure_date}/{departure_date}/{travel_class}/{number_of_passengers}?sort=bestflight_a"
+    def get_flight_info(self, json_data: dict):
+
+        # Extract data from parsed JSON
+        trip_type = json_data['trip_type']
+        origin = json_data['origin']
+        destination = json_data['destination']
+        departure_date = json_data['travel_date']
+        if json_data['return_date'] is not None and json_data['return_date'] != 'None':
+            return_date = json_data['return_date']
+        else:
+            return_date = None
+        
+        if json_data['travel_class'] is not None and json_data['travel_class'] != 'None':
+            travel_class = json_data[ 'travel_class']
+        else:
+            travel_class = 'Economy'
+        if json_data['number_of_passengers'] is not None and json_data['number_of_passengers'] != 'None':
+            number_of_passengers = json_data['number_of_passengers']
+        else:
+            number_of_passengers = '1'
+        number_of_passengers += 'adults'
+        
+        # Construct the URL with the extracted data
+        if trip_type == 'one-way':
+            url = f"https://booking.kayak.com/flights/{origin}-{destination}/{departure_date}/{travel_class}/{number_of_passengers}?sort=bestflight_a"
+        elif trip_type == 'round' and return_date:
+            url = f"https://booking.kayak.com/flights/{origin}-{destination}/{departure_date}/{return_date}/{travel_class}/{number_of_passengers}?sort=bestflight_a"
+        elif trip_type == 'round' and not return_date:
+            url = f"https://booking.kayak.com/flights/{origin}-{destination}/{departure_date}/{departure_date}/{travel_class}/{number_of_passengers}?sort=bestflight_a"
 
 
-    print(url)
-    # Configure Chrome options for headless mode
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")  # Run in headless mode
-    # Initialize the WebDriver (assuming you have Chrome WebDriver installed)
-    driver = webdriver.Chrome()
+        print(url)
+        # Configure Chrome options for headless mode
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")  # Run in headless mode
+        # Initialize the WebDriver (assuming you have Chrome WebDriver installed)
+        driver = webdriver.Chrome()
 
-    # Load the HTML page
-    driver.get(url)
-    time.sleep(3)
-    flights = []
+        # Load the HTML page
+        driver.get(url)
+        time.sleep(3)
+        flights = []
 
-    try:
+        try:
 
-        elements = driver.find_elements(By.CLASS_NAME, "Base-Results-HorizonResult")
-        time.sleep(2)
+            elements = driver.find_elements(By.CLASS_NAME, "Base-Results-HorizonResult")
+            time.sleep(2)
 
-        if not elements:
-            raise Exception("No flights found")
+            if not elements:
+                raise Exception("No flights found")
 
-        # Extract information from the found elements
-        max_flight_count = 5
-        for element in elements:
-            flights.append(element.text)
-            max_flight_count -= 1
-            if max_flight_count == 0:
-                break
+            # Extract information from the found elements
+            max_flight_count = 5
+            for element in elements:
+                flights.append(element.text)
+                max_flight_count -= 1
+                if max_flight_count == 0:
+                    break
 
-        return flights
-    
-    except:
-        return None
+            return flights
+        
+        except:
+            return None
 
     
 
